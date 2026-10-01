@@ -1,0 +1,8 @@
+{
+  "name": "tripothon-memory-courtyard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": { "node": ">=22.15.0" },
+  "scripts": { "start": "node server.mjs", "test": "node --test tests/*.test.mjs", "build:preview": "node scripts/build-preview.mjs" }
+}
