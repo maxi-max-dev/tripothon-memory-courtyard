@@ -87,7 +87,8 @@ npm run build:preview
 
 公开预览可以查看界面、材料板、固定程序院子，点击“补充一条合成回忆”，并体验模拟助手、确认和历史版本流程。全部角色和回忆为固定合成案例；不接收用户文字或照片，不调用外部 AI。状态只在当前页面内存中，刷新重置。它没有跨设备同步、登录或服务端持久化，不能证明真实多人后端已部署。
 
-源码仓库保持私有。GitHub Free 仅支持公开仓库 Pages；私有仓库需当前账户已有支持的计划。若账户不支持，发布必须暂停，不能自行公开源码或升级付费计划。
+源码仓库已公开。静态体验入口：<https://maxi-max-dev.github.io/tripothon-memory-courtyard/>；[视觉素材板](https://maxi-max-dev.github.io/tripothon-memory-courtyard/materials.html)。仅发布 `main /docs`，没有部署 Node / SQLite 后端。
+
 
 ## 验证
 
