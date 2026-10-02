@@ -6,7 +6,7 @@ from urllib.parse import urlsplit, unquote
 import hashlib, json, zipfile
 root=Path(__file__).resolve().parent.parent
 docs=root/'docs'
-files=['index.html','demo.html','demo.css','demo.js','demo-state.js','notebook.js','notebook-state.js','notebook.css','submission.html','submission.css','materials.html','materials.css','generated-world.html','generated-world.css','generated-world.js','workspace.html','app.js','style.css','viewer.js','spz-viewer.js','splat-sort-worker.js','static-preview.js','icon.svg','courtyard.svg','walkthrough.mp4','.nojekyll','screens/app-home.png','screens/app-local-scene.png']
+files=['index.html','demo.html','demo.css','demo.js','demo-state.js','notebook.js','notebook-state.js','notebook.css','submission.html','submission.css','materials.html','materials.css','generated-world.html','generated-world.css','generated-world.js','workspace.html','app.js','style.css','viewer.js','spz-viewer.js','viewer-diagnostics.js','viewer-diagnostics.css','splat-sort-worker.js','static-preview.js','icon.svg','courtyard.svg','walkthrough.mp4','.nojekyll','screens/app-home.png','screens/app-local-scene.png']
 for directory in ['osmanthus-demo','osmanthus-revision']:
     for name in ['manifest.json','world.tsp','world-hq.tsp','thumbnail.webp','panorama.png','viewer.png']:
         files.append(f'worlds/{directory}/{name}')

@@ -1,11 +1,14 @@
 import {CASE_MESSAGES,WORLD_CATALOG,STORAGE_KEY,initialState,visibleMessages,describe,transition,restoreState} from './demo-state.js';
 import {loadSpzViewer} from './spz-viewer.js';
+import {cleanDiagnostics,viewerError,explainViewerFailure,diagnosticText,loadWorldManifest} from './viewer-diagnostics.js';
 import {mountNotebook} from './notebook.js';
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state=initialState(),storageWorks=true,viewer=null,controller=null,epoch=0,loading=false,shownVersion=null,toastTimer,highQuality=window.innerWidth>=900;
 try{state=restoreState(localStorage.getItem(STORAGE_KEY));}catch{storageWorks=false;}
 let currentPage='home';
+let lastDiagnostic=cleanDiagnostics();
+function showDiagnostic(d){lastDiagnostic=cleanDiagnostics(d);$('world-diagnostics').hidden=false;$('diagnostic-text').textContent=diagnosticText(lastDiagnostic);}
 const routeNames=['memories','scene','world','versions'];
 const baseFor=n=>`./worlds/${WORLD_CATALOG[n].directory}/`;
 const sources=ids=>ids.map(id=>{const m=CASE_MESSAGES.find(m=>m.id===id);return `<button class="source" data-source="${id}">${esc(m.name)} · 原话 ↗</button>`;}).join('');
@@ -51,25 +54,30 @@ function stopWorld(){epoch++;controller?.abort();controller=null;viewer?.destroy
 function toolsReady(ready){for(const id of['world-tools','move-controls','world-hint'])$(id).hidden=!ready;}
 function prepareWorld(){
   stopWorld();shownVersion=state.activeVersion;const world=WORLD_CATALOG[shownVersion],base=baseFor(shownVersion);
+  lastDiagnostic=cleanDiagnostics({quality:highQuality?'clear':'light'});$('world-diagnostics').hidden=true;$('world-diagnostics').open=false;$('try-light').hidden=true;
   $('world-title').textContent=world.title+'。';$('world-edition').textContent=world.subtitle+' · 已保存';
   $('world-cover').src=base+'thumbnail.webp';$('world-cover').hidden=false;$('world').hidden=true;$('world-shade').hidden=false;$('world-entry').hidden=false;$('world-failure').hidden=true;toolsReady(false);
   $('world-entry-title').innerHTML=shownVersion===1?'风一吹，<br>又像是那个下午。':'原来，<br>它一直停在那里。';
   $('world-entry-kicker').textContent=shownVersion===1?'秋日 · 江南小院':'新补充的回忆 · 红色小自行车';
   $('world-badge').textContent='World Labs · 真实生成 · 已保存';$('enter-world').textContent='走进院子 ↗';$('enter-world').disabled=false;
-  $('world-size').textContent=highQuality?'清晰版约 12 MB · 可切换轻量版':'轻量版约 6 MB · 从已保存的文件打开';$('panorama-link').href=base+'panorama.png';$('world-status').textContent=shownVersion===1?'已保存的生成结果，反复浏览不再收费。':'第二版为重新生成；除新增自行车外，其他空间细节也可能变化。';
+  $('world-size').textContent=highQuality?'清晰版约 12 MB · 可切换轻量版':'轻量版约 6 MB · 从已保存的文件打开';$('panorama-link').href=base+'panorama.png';$('failure-panorama').href=base+'panorama.png';$('world-status').textContent=shownVersion===1?'已保存的生成结果，反复浏览不再收费。':'第二版为重新生成；除新增自行车外，其他空间细节也可能变化。';
 }
-function failWorld(){stopWorld();toolsReady(false);$('world').hidden=true;$('world-cover').hidden=false;$('world-shade').hidden=false;$('world-entry').hidden=true;$('world-failure').hidden=false;$('world-badge').textContent='备用画面仍然可用';$('world-status').textContent='加载失败不会触发重新生成，也不会扣费。';}
+function failWorld(error){
+  const result=explainViewerFailure(error,lastDiagnostic);stopWorld();showDiagnostic(result.diagnostic);toolsReady(false);$('world').hidden=true;$('world-cover').hidden=false;$('world-shade').hidden=false;$('world-entry').hidden=true;$('world-failure').hidden=false;
+  $('failure-title').textContent=result.title;$('failure-detail').textContent=result.reason+' '+result.suggestion;$('retry-world').textContent=result.retryLabel;$('try-light').hidden=!highQuality||!result.canTryLight;
+  $('world-badge').textContent='备用画面仍然可用';$('world-status').textContent='原因代码：'+result.code+' · 加载失败不会触发生成或扣费。';
+}
 async function enterWorld(){
-  if(loading)return;stopWorld();loading=true;const token=epoch;controller=new AbortController();const currentController=controller,signal=controller.signal;const timeout=setTimeout(()=>currentController.abort(new Error('timeout')),45000);toolsReady(false);$('world').hidden=true;$('world-cover').hidden=false;$('world-shade').hidden=false;$('world-entry').hidden=false;
+  if(loading)return;stopWorld();loading=true;const token=epoch;controller=new AbortController();const currentController=controller,signal=controller.signal;const timeout=setTimeout(()=>currentController.abort(viewerError('LOAD_TIMEOUT',lastDiagnostic)),45000);toolsReady(false);$('world').hidden=true;$('world-cover').hidden=false;$('world-shade').hidden=false;$('world-entry').hidden=false;
   $('enter-world').disabled=true;$('enter-world').textContent='正在打开院子…';$('world-failure').hidden=true;
   $('world-status').textContent='正在读取已保存的世界文件…';
   try{
-    const base=baseFor(state.activeVersion),response=await fetch(base+'manifest.json',{signal});if(!response.ok)throw Error('manifest');const manifest=await response.json();
+    const base=baseFor(state.activeVersion),manifest=await loadWorldManifest(base+'manifest.json',{signal,quality:highQuality?'clear':'light',onDiagnostic:d=>{if(token===epoch)showDiagnostic(d);}});
     if(token!==epoch)return;const old=$('world');old.replaceWith(old.cloneNode(false));
-    const loaded=await loadSpzViewer($('world'),base+(highQuality&&manifest.viewerHighQualityFile?'world-hq.tsp':'world.tsp'),{signal,startPose:manifest.startPose,onFailure:()=>{if(token===epoch)failWorld();}});
+    const loaded=await loadSpzViewer($('world'),base+(highQuality&&manifest.viewerHighQualityFile?'world-hq.tsp':'world.tsp'),{signal,startPose:manifest.startPose,diagnostic:lastDiagnostic,onDiagnostic:d=>{if(token===epoch)showDiagnostic(d);},onStatus:text=>{if(token===epoch)$('world-status').textContent=text;},onFailure:(_message,d)=>{if(token===epoch)failWorld(viewerError(d?.code,d));}});
     if(token!==epoch){loaded.destroy();return;}viewer=loaded;loading=false;$('world').hidden=false;$('world-cover').hidden=true;$('world-shade').hidden=true;$('world-entry').hidden=true;toolsReady(true);viewer.setExploring(true);
     $('world-badge').textContent='正在探索 · 已保存的真实世界';$('quality-toggle').textContent=highQuality?'切换轻量版':'清晰画质 · 约 12 MB';$('world-status').textContent=(highQuality?'清晰':'轻量')+' 3D 已载入 · 拖动环顾、方向按钮移动 · 浏览不调用生成接口';$('world-stage').scrollIntoView({block:'center',behavior:'smooth'});
-  }catch(e){if(token===epoch)failWorld();}finally{clearTimeout(timeout);}
+  }catch(e){if(token===epoch)failWorld(e);}finally{clearTimeout(timeout);}
 }
 $('start-demo').onclick=()=>openCase();
 document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const step=Number(b.dataset.step);if(step>=3&&!state.versions.length){modal(step===3?'世界还在等待你的确认':'每一次确认，都会留下记录','<p class="dialog-copy">先核对场景里的来源与分歧，确认后就可以打开桂花小院。旧版会始终保留。</p><div class="dialog-actions"><button class="primary" id="go-review">去核对场景描述 →</button></div>');$('go-review').onclick=()=>{$('dialog').close();act({type:'step',step:2},{scroll:true});};return;}act({type:'step',step},{scroll:true});});
@@ -81,6 +89,7 @@ $('confirm-one').onclick=()=>act({type:'confirm',version:1,consent:$('consent-on
 $('confirm-two').onclick=()=>act({type:'confirm',version:2,consent:$('consent-two').checked},{scroll:true});
 $('exit-world').onclick=()=>{prepareWorld();notify('已退出探索。这个世界与确认记录都已保留。');};$('world-back').onclick=()=>act({type:'step',step:2},{scroll:true});
 $('enter-world').onclick=enterWorld;$('retry-world').onclick=enterWorld;$('reset-view').onclick=()=>viewer?.reset();
+$('try-light').onclick=()=>{highQuality=false;$('world-size').textContent='轻量版约 6 MB · 正在读取已保存文件';enterWorld();};
 $('quality-toggle').onclick=()=>{highQuality=!highQuality;$('world-size').textContent=highQuality?'清晰版约 12 MB · 正在读取已保存文件':'轻量版约 6 MB · 正在读取已保存文件';enterWorld();};
 $('show-panorama').onclick=()=>{stopWorld();toolsReady(false);$('world').hidden=true;$('world-cover').src=baseFor(state.activeVersion)+'panorama.png';$('world-cover').hidden=false;$('world-shade').hidden=false;$('world-entry').hidden=false;$('enter-world').disabled=false;$('enter-world').textContent='再次走进院子 ↗';$('world-badge').textContent='已保存的全景 · 可反复查看';$('world-status').textContent='全景来自这份真实生成结果。需要移动探索时，可重新打开 3D。';};
 for(const b of document.querySelectorAll('[data-move]')){b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);viewer?.move(b.dataset.move,true);});for(const name of['pointerup','pointercancel','lostpointercapture'])b.addEventListener(name,()=>viewer?.move(b.dataset.move,false));}

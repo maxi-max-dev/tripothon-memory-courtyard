@@ -1,5 +1,6 @@
 let records;
 self.onmessage=({data})=>{
+  if(data.probe){self.postMessage({ready:2});return;}
   if(data.records){records=new Float32Array(data.records);return;}
   if(!records)return;const m=data.view,n=records.length/14,depth=new Float32Array(n),indices=new Uint32Array(n);
   for(let i=0;i<n;i++){indices[i]=i;depth[i]=m[2]*records[i*14]+m[6]*records[i*14+1]+m[10]*records[i*14+2]+m[14];}

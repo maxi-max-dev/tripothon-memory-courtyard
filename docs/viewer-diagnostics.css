@@ -1,0 +1,15 @@
+.viewer-diagnostics{margin:0 0 24px;padding:13px 16px;border:1px solid #d8ddce;border-radius:8px;background:#fffdf7;color:#304c3c;font-size:12px;line-height:1.8}
+.viewer-diagnostics summary{cursor:pointer;min-height:30px;align-content:center}
+.viewer-diagnostics summary:focus-visible{outline:3px solid #b78840;outline-offset:4px}
+.viewer-diagnostics p{margin:12px 0;font-size:12px;line-height:1.9;color:#6c7767}
+.viewer-diagnostics pre{white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;margin:0;font:12px/1.9 ui-monospace,SFMono-Regular,monospace}
+.failure-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.failure-actions a{font-size:13px;text-decoration:underline;text-underline-offset:4px;min-height:44px;display:inline-flex;align-items:center}
+.failure-actions button{min-height:44px}
+.world-failure{max-width:460px;max-height:calc(100% - 90px);overflow:auto;bottom:25px;padding:22px}
+.world-failure h3{margin-bottom:12px}
+.world-failure p{font-size:12px;line-height:1.8;margin-bottom:16px}
+.world-failure .primary{font-size:12px;padding:12px 15px;gap:10px}
+.viewer-message{max-height:calc(100% - 95px);overflow:auto}
+.viewer-message .failure-actions a{color:inherit}
+@media(max-width:600px){.world-failure{left:14px;right:14px;padding:19px}.world-failure h3{font-size:21px}.viewer-diagnostics{padding:12px}}

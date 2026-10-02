@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f3f0e6"><title>桂花又开了 · 回到那儿</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./generated-world.css"><script type="module" src="./generated-world.js"></script>
+  <link rel="stylesheet" href="./generated-world.css"><link rel="stylesheet" href="./viewer-diagnostics.css"><script type="module" src="./generated-world.js"></script>
 </head>
 <body>
   <main>
@@ -16,12 +16,13 @@
       <div class="shade" id="shade"></div>
       <div class="scene-tag"><i></i><span id="scene-tag">已生成并保存 · 浏览不再调用 AI</span></div>
       <div class="welcome-overlay" id="welcome-overlay"><span>秋日 · 江南小院 · 合成设定</span><h2>风一吹，<br>又像是那个下午。</h2><button id="enter" class="primary">走进院子 <span>↗</span></button><p>约 6 MB · 首次打开需加载</p></div>
-      <div class="viewer-message" id="viewer-message" role="status" hidden><strong id="message-title">正在打开院子</strong><p id="message-detail">读取已保存的世界，不会再次生成。</p><button id="retry" hidden>重新加载 3D</button></div>
+      <div class="viewer-message" id="viewer-message" role="status" hidden><strong id="message-title">正在打开院子</strong><p id="message-detail">读取已保存的世界，不会再次生成。</p><div class="failure-actions"><button id="retry" hidden>重新检测支持</button><a id="failure-panorama" href="./worlds/osmanthus-demo/panorama.png" target="_blank" rel="noopener" hidden>打开完整全景 ↗</a></div></div>
       <div class="explore-tools" id="explore-tools" hidden><button id="reset">回到入口 ↺</button><button id="show-cover">查看全景</button></div>
       <div class="walk" id="walk" hidden aria-label="移动控制"><button data-move="forward" aria-label="向前走">↑</button><div><button data-move="left" aria-label="向左走">←</button><button data-move="back" aria-label="向后走">↓</button><button data-move="right" aria-label="向右走">→</button></div></div>
       <p class="hint" id="hint" hidden>拖动环顾 · 长按方向按钮移动 · 电脑也可用 W A S D</p>
     </section>
     <div class="below-scene"><p id="status" role="status">这是已完成的生成结果，可重复打开。</p><a id="panorama-link" href="./worlds/osmanthus-demo/panorama.png" target="_blank" rel="noopener">打开备用全景 ↗</a></div>
+    <details id="world-diagnostics" class="viewer-diagnostics" hidden><summary>查看 3D 支持与加载诊断</summary><p>当前查看器需要 WebGL 1、实例化扩展与 Web Worker。远程或受限环境可能禁用相关能力。以下信息仅在本页显示，不自动上传；可选中文字复制。</p><pre id="diagnostic-text"></pre></details>
     <section class="story"><div class="story-heading"><p class="eyebrow">WHERE THE DETAILS COME FROM</p><h2>每一处细节，<br>都有来处。</h2><p>这次用合成文字验证“描述 → 世界”的真实生成。没有使用私人照片，也没有把模型想象当成历史。</p></div><div class="details"><article><span class="number">01</span><div><h3>我们给出的设定</h3><p>秋日的江南小院、左侧桂花树、树下方桌与竹凳、前方蓝色木门、右侧木窗和盆栽。</p><span class="source">来源：本次 Demo 的合成文字描述</span></div></article><article><span class="number">02</span><div><h3>模型补出的部分</h3><p>具体建筑样式、树叶与材质、物件细节，以及文字没有描述的空间结构。它们都是推测。</p><span class="source inference">AI 想象 · 不作为真实旧地的证据</span></div></article><article><span class="number">03</span><div><h3>这份世界已经留下</h3><p>3D 文件、全景与生成记录均已保存。当前页面只读取结果，聊天中的修改不会悄悄覆盖它。</p><span class="source" id="generation-detail">World Labs · 生成信息加载中</span></div></article></div></section>
     <footer><span>回到那儿 <b>✳</b> 一个可以反复回来的下午。</span><a href="./demo.html">进入完整回忆案例 →</a></footer>
   </main>
