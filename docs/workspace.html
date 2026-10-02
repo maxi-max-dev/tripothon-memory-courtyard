@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN" data-preview="static">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f3ec"><title>Tripothon · 一起记得的地方</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Tripothon 首页"><img src="./icon.svg" alt=""><span>tripothon<span class="brand-dot">.</span></span></a>
+    <a class="brand-caption" href="./demo.html">打开完整案例 Demo ↗</a>
+    <button class="connection" id="connection" type="button" title="查看连接状态"><i></i><span>连接本地空间</span></button>
+  </header>
+  <main id="app" class="workspace" hidden>
+    <section class="project-header">
+      <div><div class="eyebrow">A PLACE WE REMEMBER <span> / </span> 共同回忆</div><h1 id="project-title">桂花树下的院子</h1><p class="subtitle">从一张老照片、一段话开始。一起拼回那个地方。</p></div>
+      <div class="project-actions"><div class="people" id="people"></div><button class="button outline" id="invite-button"><span aria-hidden="true">＋</span> 邀请一起回忆</button></div>
+    </section>
+    <div class="version-strip" id="version-strip" aria-label="资料与世界版本"></div>
+    <div class="mobile-tabs" role="tablist" aria-label="工作区"><button class="active" data-tab="chat" role="tab" aria-selected="true">一起回忆</button><button data-tab="world" role="tab" aria-selected="false">我们的空间</button><button data-tab="story" role="tab" aria-selected="false">场景描述</button></div>
+    <div class="work-grid">
+      <section class="chat-panel panel" id="chat-panel">
+        <div class="panel-heading"><div><span class="section-number">01</span><h2>一起回忆</h2></div><span class="small" id="member-count">1 位参与者</span></div>
+        <div class="chat-intro"><span class="spark">✧</span><p>不用记得完整。你说的一点、我记得的一点，<br>会慢慢成为同一个地方。</p></div>
+        <div class="chat-agent-control"><div><strong id="chat-agent-label">群聊助手 · 已关闭</strong><p id="chat-agent-status">发起人可启用模拟调度，不调用真实 AI。</p></div><button id="agent-control" class="button outline">助手设置</button></div>
+        <div id="messages" class="messages" tabindex="0" aria-label="项目消息"></div>
+        <div class="typing-note" id="conversation-note">只有真实加入的人会计入参与者。</div>
+        <form class="composer" id="message-form">
+          <textarea id="message-input" rows="2" maxlength="4000" placeholder="那时候，院子里还有……" aria-label="写下你的回忆" required></textarea>
+          <div class="composer-actions"><button type="button" class="icon-label" id="upload-button"><span aria-hidden="true">▧</span> 添加照片</button><span class="key-hint">⌘ / Ctrl + Enter</span><button class="send-button" type="submit" aria-label="发送回忆">↑</button></div>
+        </form>
+        <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" hidden>
+      </section>
+      <section class="world-panel panel" id="world-panel">
+        <div class="panel-heading"><div><span class="section-number">02</span><h2>我们的空间</h2></div><span class="pill sand" id="world-status">尚未保存世界</span></div>
+        <div class="world-view" id="world-view">
+          <canvas id="world-canvas" aria-label="可交互的本地院子示例" tabindex="0"></canvas>
+          <div class="viewer-fallback" id="viewer-fallback" hidden><img src="./courtyard.svg" alt="原创院子示意图：树、蓝色木门与方桌"><p role="status"><span id="viewer-failure-reason">3D 暂时无法加载，已保留示意图。</span><small id="viewer-failure-code"></small><button id="retry-viewer" class="text-button">重新加载 3D</button></p></div>
+          <div class="scene-label"><i></i><span id="scene-label">本地程序场景 · 预览</span></div>
+          <button id="reset-view" class="view-reset" aria-label="重置视角" title="重置视角">↺</button>
+          <div class="world-overlay" id="world-overlay"><p class="serif">风一吹，<br>桂花又落了一地。</p><span>让记忆，有一个可以走进去的地方。</span></div>
+          <div class="world-control" id="world-control"><span>拖动环顾 · 点击进入探索</span><button class="button light" id="explore-button">进入院子 <span aria-hidden="true">↗</span></button></div>
+          <div class="walk-controls" id="walk-controls" hidden><button data-move="forward" aria-label="向前走">↑</button><div><button data-move="left" aria-label="向左走">←</button><button data-move="back" aria-label="向后走">↓</button><button data-move="right" aria-label="向右走">→</button></div></div>
+          <div id="explore-hint" class="explore-hint" hidden>W A S D / 方向键移动 · 拖动环顾 <button id="exit-explore">退出探索</button></div>
+        </div>
+        <div class="world-foot"><div><strong id="world-caption">一座院子，等待大家一起补全</strong><p id="world-provenance">原创程序示例，未由聊天或 World Labs 生成。</p></div><button class="icon-label" id="versions-button" aria-label="查看保存记录">◷ 保存记录</button></div>
+        <a class="recorded-world-link" href="./generated-world.html">✳ 走进已生成的桂花小院 <span>World Labs 真实结果 · 不重复扣费 ↗</span></a>
+        <div class="world-version-note"><p id="world-pending"></p><button class="text-button" id="world-snapshot" hidden>查看这个世界的确认描述 ↗</button></div>
+        <div class="source-strip"><div class="source-title"><span>记忆的碎片</span><span id="photo-count">0 张照片</span></div><div id="photo-gallery" class="photo-gallery"></div></div>
+      </section>
+      <section class="story-panel panel" id="story-panel">
+        <div class="panel-heading"><div><span class="section-number">03</span><h2>把回忆拼成场景</h2></div><span class="pill" id="scene-status">等待整理</span></div>
+        <div class="story-body">
+          <div class="agent-row"><span class="agent-mark">✧</span><div><strong>记忆整理助手</strong><p id="agent-status">真实 AI 未连接 · 可查看引用示例</p></div><button class="text-button" id="providers-button">接入状态 ↗</button></div>
+          <div id="scene-content" class="scene-content"><p class="empty-copy">每一处细节，都应有一个来处。<br>整理大家的回忆，确认细节，再一起走进去。</p></div>
+          <div class="scene-actions"><button class="button outline" id="draft-button">预览整理示例</button><button class="button outline" id="ai-button" disabled>用 AI 整理</button><button class="text-button" id="edit-scene" hidden>编辑描述</button><button class="button primary" id="confirm-button" disabled>确认这份描述 <span>→</span></button></div>
+          <div class="generation-row"><div><strong>下一步，让回忆成为空间</strong><p id="generation-hint">发起人确认描述后，可以保存并探索示例世界。</p></div><button class="button dark" id="generate-button" disabled>生成世界 <span>↗</span></button></div>
+          <div id="job-note" class="job-note" hidden></div>
+        </div>
+      </section>
+    </div>
+    <footer><span>TRIPOTHON <span class="footer-dot">✳</span> 记得的人，让地方重新存在。</span><span>本机 Demo · 回忆持久保存 · <button class="text-button" id="footer-status">查看真实 / 示例状态</button></span></footer>
+  </main>
+  <section class="welcome" id="welcome" hidden>
+    <div class="welcome-art"><img src="./courtyard.svg" alt="手绘风格的院子示意图"><div><span class="eyebrow">SOME PLACES NEVER LEAVE US.</span><h1>有些地方，<br>我们一起记得。</h1><p>邀请记得它的人。把照片与回忆放在一起，<br>给那个回不去的地方，一个新的入口。</p></div></div>
+    <form id="join-form" class="join-card"><span class="eyebrow">START WITH A MEMORY</span><h2 id="join-heading">建立一个回忆空间</h2><p id="join-description">一个房间，一座院子。先从一处地方开始。</p><label>怎么称呼你<input id="name-input" name="name" maxlength="30" placeholder="你的称呼" autocomplete="nickname" required></label><label id="project-name-label">这个地方叫什么<input id="title-input" maxlength="60" value="桂花树下的院子" required></label><label class="checkbox-label" id="seed-label"><input type="checkbox" id="seed-input" checked><span>载入三条合成回忆，体验示例流程</span></label><button class="button primary" id="join-submit" type="submit">一起记得 <span>→</span></button><p class="local-note"><a href="./generated-world.html">先走进一个真实生成的小院 ↗</a></p><p class="local-note">本地邀请制 Demo，称呼不是正式登录账号。<br>照片和回忆保存在这台 Mac；真实 AI 服务尚未启用。</p></form>
+  </section>
+  <div class="fatal" id="fatal" hidden><h1>暂时连不上回忆空间</h1><p id="fatal-message"></p><button id="reload-button" class="button primary">重新连接</button></div>
+  <dialog id="modal"><div class="modal-heading"><h2 id="modal-title"></h2><button id="close-modal" aria-label="关闭对话框">×</button></div><div id="modal-body"></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

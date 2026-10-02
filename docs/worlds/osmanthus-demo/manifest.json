@@ -1,0 +1,103 @@
+{
+  "title": "桂花又开了",
+  "provider": "World Labs",
+  "model": "marble-1.1",
+  "generatedAt": "2026-10-01T10:51:23Z",
+  "worldId": "7ffe5721-4d70-48c8-981d-c56c3dd69f56",
+  "operationId": "8cc61065-0eab-4814-bb82-1d00082d1a75",
+  "permission": {
+    "public": false,
+    "allowed_readers": [],
+    "allowed_writers": [],
+    "allow_id_access": false
+  },
+  "inputType": "synthetic-text",
+  "provenance": "使用本次 Demo 的合成文字设定，由 World Labs 真实生成。未使用私人照片；所有细节不代表真实历史。",
+  "viewerFile": "world.tsp",
+  "thumbnailFile": "thumbnail.webp",
+  "panoramaFile": "panorama.png",
+  "startPose": {
+    "position": [
+      0,
+      1.6142452955245972,
+      0
+    ],
+    "yaw": 0,
+    "pitch": -0.05
+  },
+  "rendering": {
+    "version": 2,
+    "sourcePoints": 98304,
+    "renderedPoints": 98304,
+    "shDegree": 0,
+    "bounds": {
+      "min": [
+        -6.20114393113181,
+        -0.05607049504760653,
+        -12.353562890784815
+      ],
+      "max": [
+        21.627351059927605,
+        32.26760021841619,
+        28.7608057258185
+      ]
+    },
+    "coordinateFrame": "marble_raw_opencv → RUB",
+    "quality": "轻量 DC 颜色预览，省略高阶球谐；无碰撞体。"
+  },
+  "prompt": "A single intimate courtyard of a modest family home in Jiangnan, China, in autumn around 2002, entirely fictional and created as a nostalgic memory-space demo. Photorealistic architectural environment, warm natural afternoon sunlight, subtle film colors, quiet, tender, lived-in but uncluttered. One coherent open-air rectangular courtyard, about 8 by 6 meters, enclosed by simple white limewashed walls and a one-story house with dark gray clay roof tiles. View from human eye height near the entrance, with an open walkable central area. A mature osmanthus tree grows to the left; tiny golden blossoms and a few fallen leaves on gently weathered gray stone paving. Under the tree is a small square wooden table with two low bamboo stools, a pale enamel cup and a shallow woven bamboo tray of green edamame. A faded indigo blue wooden double door sits in the wall straight ahead. To the right is one rectangular wooden-framed window and a small row of terracotta potted plants. Gentle dappled shadows, believable materials, soft depth and fine details, no people or animals. All views must describe this same small courtyard, with consistent geometry and object placement. The courtyard is the whole experience: no extra rooms, no grand palace, no fantasy elements, no text, captions, signs, branding or interface. Keep the ground clear and the tree, table and blue door visually distinct. This is an imagined illustration of a fictional memory, not a documented reconstruction of anyone's actual home.",
+  "costCredits": 1580,
+  "regenerateOnView": false,
+  "assets": {
+    "world-100k.spz": {
+      "bytes": 1346312,
+      "sha256": "130c66fa5ec9fd2f9f5d31f149aab202b80468bfb6fdab6b1f4418f95438b1dd",
+      "contentType": "application/octet-stream"
+    },
+    "world.tsp": {
+      "bytes": 5505364,
+      "sha256": "61d7cd79387a05ded987ad10f6ac0486c68866ddea852ff47b16462c1c769036"
+    },
+    "thumbnail.webp": {
+      "bytes": 30240,
+      "sha256": "d4d79e547cbbf59fa3bd479e9274c58b135171c96de2a7386dc5911fdfc84295",
+      "contentType": "image/webp"
+    },
+    "panorama.png": {
+      "bytes": 11245512,
+      "sha256": "21199098892ac3ed9a906458ac865f83345b6de822b2c4112f4d9a295594d760",
+      "contentType": "image/png"
+    },
+    "world-hq.tsp": {
+      "bytes": 11200344,
+      "sha256": "0867c466e2ee2c58617a6392c234af5fff1d0153f7bb175758761a12add1b84e"
+    },
+    "viewer.png": {
+      "kind": "actual-browser-screenshot",
+      "bytes": 115233,
+      "sha256": "d91c66553abe9e3e243e8dca839173d4f813265aa6c87aa9b49531a0b99ddbb3"
+    }
+  },
+  "viewerHighQualityFile": "world-hq.tsp",
+  "highQualityRendering": {
+    "version": 2,
+    "sourcePoints": 500000,
+    "renderedPoints": 200000,
+    "shDegree": 0,
+    "bounds": {
+      "min": [
+        -6.310478013474494,
+        -0.2129411349305883,
+        -12.491418907651678
+      ],
+      "max": [
+        22.17639829951804,
+        32.90637271036394,
+        29.044242450152524
+      ]
+    },
+    "coordinateFrame": "marble_raw_opencv → RUB",
+    "quality": "轻量 DC 颜色预览，省略高阶球谐；无碰撞体。"
+  },
+  "viewerScreenshotFile": "viewer.png"
+}

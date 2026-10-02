@@ -19,7 +19,7 @@ export function createStaticPreview(){
     if(processed.has(project.revision)){chatAgent.status='idle';onUpdate();return;}
     if(chatAgent.mockUsed>=10){chatAgent={...chatAgent,mode:'off',status:'limited',last_error:'本页 10 次模拟整理已用完，刷新可重置合成体验。'};onUpdate();return;}
     processed.add(project.revision);chatAgent.mockUsed++;const scene=draft('mock');
-    agentPosts.push({id:uid(),agent_mode:'mock',text:`静态模拟助手已整理资料 r${project.revision} → D${scene.version}。结果仅存在当前页面；没有真实 AI 或共享后端。`,sourceIds:[],created_at:now()});
+    agentPosts.push({id:uid(),agent_mode:'mock',text:`示例助手已整理现有回忆，留下第 ${scene.version} 份描述。结果仅存在当前页面；没有真实 AI 或共享后端。`,sourceIds:[],created_at:now()});
     for(const q of data.questions)if(!asked.has(q.text)){asked.add(q.text);agentPosts.push({id:uid(),agent_mode:'mock',text:'模拟追问：'+q.text,sourceIds:q.sourceIds,created_at:now()});}
     chatAgent.status='idle';onUpdate();
   },1800);}

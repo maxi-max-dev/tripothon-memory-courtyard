@@ -1,0 +1,104 @@
+{
+  "title": "还有那辆红色单车",
+  "provider": "World Labs",
+  "model": "marble-1.1",
+  "generatedAt": "2026-10-01T11:11:32Z",
+  "worldId": "b8a71a42-3813-4171-b6dd-597dc2c3994a",
+  "operationId": "9ef7aa89-edce-435b-801e-dbedcdaee7fd",
+  "permission": {
+    "public": false,
+    "allowed_readers": [],
+    "allowed_writers": [],
+    "allow_id_access": false
+  },
+  "inputType": "synthetic-text",
+  "provenance": "使用本次 Demo 的合成文字设定，由 World Labs 真实生成。未使用私人照片；所有细节不代表真实历史。",
+  "viewerFile": "world.tsp",
+  "thumbnailFile": "thumbnail.webp",
+  "panoramaFile": "panorama.png",
+  "startPose": {
+    "position": [
+      0,
+      1.4860879182815552,
+      0
+    ],
+    "yaw": 0.6,
+    "pitch": -0.12
+  },
+  "rendering": {
+    "version": 2,
+    "sourcePoints": 98304,
+    "renderedPoints": 98304,
+    "shDegree": 0,
+    "bounds": {
+      "min": [
+        -8.512126173824072,
+        -0.03393461275845766,
+        -7.08457419835031
+      ],
+      "max": [
+        12.68115814961493,
+        25.40816020499915,
+        22.305952903814614
+      ]
+    },
+    "coordinateFrame": "marble_raw_opencv → RUB",
+    "quality": "轻量 DC 颜色预览，省略高阶球谐；无碰撞体。"
+  },
+  "prompt": "A single intimate courtyard of a modest family home in Jiangnan, China, in autumn around 2002, entirely fictional and created as a nostalgic memory-space demo. Photorealistic architectural environment, warm natural afternoon sunlight, subtle film colors, quiet, tender, lived-in but uncluttered. One coherent open-air rectangular courtyard, about 8 by 6 meters, enclosed by simple white limewashed walls and a one-story house with dark gray clay roof tiles. View from human eye height near the entrance, with an open walkable central area. A mature osmanthus tree grows to the left; tiny golden blossoms and a few fallen leaves on gently weathered gray stone paving. Under the tree is a small square wooden table with two low bamboo stools, a pale enamel cup and a shallow woven bamboo tray of green edamame. A faded indigo blue wooden double door sits in the wall straight ahead. To the right is one rectangular wooden-framed window and a small row of terracotta potted plants. One clearly visible small bright red child bicycle with a simple red frame and black tires is leaning against the right-hand courtyard wall beside the potted plants, to the right of the blue door. The bicycle is a newly remembered detail and must be clearly recognizable. Keep the central walking area open. Gentle dappled shadows, believable materials, soft depth and fine details, no people or animals. All views must describe this same small courtyard, with consistent geometry and object placement. The courtyard is the whole experience: no extra rooms, no grand palace, no fantasy elements, no text, captions, signs, branding or interface. Keep the ground clear and the tree, table and blue door visually distinct. This is an imagined illustration of a fictional memory, not a documented reconstruction of anyone's actual home.",
+  "costCredits": 1580,
+  "regenerateOnView": false,
+  "assets": {
+    "world-100k.spz": {
+      "bytes": 1296981,
+      "sha256": "10d81cf7979290a208c25733b0de3be46b808c721878724951ff01e44ccf38df",
+      "contentType": "application/octet-stream"
+    },
+    "world.tsp": {
+      "bytes": 5505364,
+      "sha256": "96f5383cef08a6b9dbdfbc51cdb65fcdfa21628b66bf4b028679679102c114c4"
+    },
+    "thumbnail.webp": {
+      "bytes": 25776,
+      "sha256": "caadee2b2ddf0b0bcbcec4d108c984f6d926a2f5ef5a9951ef3a4f6a819a5bca",
+      "contentType": "image/webp"
+    },
+    "panorama.png": {
+      "bytes": 10910958,
+      "sha256": "5e99d930ad5091a0d896e2aec424bec45adb04fb5a5ed0d9efedfe94e493f14b",
+      "contentType": "image/png"
+    },
+    "world-hq.tsp": {
+      "bytes": 11200344,
+      "sha256": "742d0fd0a9d50e5989b2d22546ddb26105856160c62e375ba1f870dc810e8829"
+    },
+    "viewer.png": {
+      "kind": "actual-browser-screenshot",
+      "bytes": 108892,
+      "sha256": "b5f8e616500e35f439f3eca9596b669516c720e4a8c5cfe2044439971d8ef5ce"
+    }
+  },
+  "viewNote": "Demo entry camera faces slightly right so the new bicycle is visible; this changes only the viewer camera.",
+  "viewerHighQualityFile": "world-hq.tsp",
+  "highQualityRendering": {
+    "version": 2,
+    "sourcePoints": 500000,
+    "renderedPoints": 200000,
+    "shDegree": 0,
+    "bounds": {
+      "min": [
+        -8.691023457795382,
+        -0.12338325474411249,
+        -7.115397716872394
+      ],
+      "max": [
+        12.981536359526217,
+        25.75568026676774,
+        22.507816730998456
+      ]
+    },
+    "coordinateFrame": "marble_raw_opencv → RUB",
+    "quality": "轻量 DC 颜色预览，省略高阶球谐；无碰撞体。"
+  },
+  "viewerScreenshotFile": "viewer.png"
+}

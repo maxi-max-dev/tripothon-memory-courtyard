@@ -9,7 +9,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="/" aria-label="Tripothon 首页"><img src="/icon.svg" alt=""><span>tripothon<span class="brand-dot">.</span></span></a>
-    <span class="brand-caption">把一起记得的地方，变成可以回去的空间。</span>
+    <a class="brand-caption" href="./demo.html">打开完整案例 Demo ↗</a>
     <button class="connection" id="connection" type="button" title="查看连接状态"><i></i><span>连接本地空间</span></button>
   </header>
   <main id="app" class="workspace" hidden>
@@ -36,7 +36,7 @@
         <div class="panel-heading"><div><span class="section-number">02</span><h2>我们的空间</h2></div><span class="pill sand" id="world-status">尚未保存世界</span></div>
         <div class="world-view" id="world-view">
           <canvas id="world-canvas" aria-label="可交互的本地院子示例" tabindex="0"></canvas>
-          <div class="viewer-fallback" id="viewer-fallback" hidden><img src="/courtyard.svg" alt="原创院子示意图：树、蓝色木门与方桌"><p>3D 暂时无法加载，先看看这个地方。<button id="retry-viewer" class="text-button">重新加载</button></p></div>
+          <div class="viewer-fallback" id="viewer-fallback" hidden><img src="/courtyard.svg" alt="原创院子示意图：树、蓝色木门与方桌"><p role="status"><span id="viewer-failure-reason">3D 暂时无法加载，已保留示意图。</span><small id="viewer-failure-code"></small><button id="retry-viewer" class="text-button">重新加载 3D</button></p></div>
           <div class="scene-label"><i></i><span id="scene-label">本地程序场景 · 预览</span></div>
           <button id="reset-view" class="view-reset" aria-label="重置视角" title="重置视角">↺</button>
           <div class="world-overlay" id="world-overlay"><p class="serif">风一吹，<br>桂花又落了一地。</p><span>让记忆，有一个可以走进去的地方。</span></div>
@@ -45,6 +45,7 @@
           <div id="explore-hint" class="explore-hint" hidden>W A S D / 方向键移动 · 拖动环顾 <button id="exit-explore">退出探索</button></div>
         </div>
         <div class="world-foot"><div><strong id="world-caption">一座院子，等待大家一起补全</strong><p id="world-provenance">原创程序示例，未由聊天或 World Labs 生成。</p></div><button class="icon-label" id="versions-button" aria-label="查看保存记录">◷ 保存记录</button></div>
+        <a class="recorded-world-link" href="./generated-world.html">✳ 走进已生成的桂花小院 <span>World Labs 真实结果 · 不重复扣费 ↗</span></a>
         <div class="world-version-note"><p id="world-pending"></p><button class="text-button" id="world-snapshot" hidden>查看这个世界的确认描述 ↗</button></div>
         <div class="source-strip"><div class="source-title"><span>记忆的碎片</span><span id="photo-count">0 张照片</span></div><div id="photo-gallery" class="photo-gallery"></div></div>
       </section>
@@ -59,11 +60,11 @@
         </div>
       </section>
     </div>
-    <footer><span>TRIPOTHON <span class="footer-dot">✳</span> 记得的人，让地方重新存在。</span><span>本机 Demo · SQLite 持久保存 · <button class="text-button" id="footer-status">查看真实 / 示例状态</button></span></footer>
+    <footer><span>TRIPOTHON <span class="footer-dot">✳</span> 记得的人，让地方重新存在。</span><span>本机 Demo · 回忆持久保存 · <button class="text-button" id="footer-status">查看真实 / 示例状态</button></span></footer>
   </main>
   <section class="welcome" id="welcome" hidden>
     <div class="welcome-art"><img src="/courtyard.svg" alt="手绘风格的院子示意图"><div><span class="eyebrow">SOME PLACES NEVER LEAVE US.</span><h1>有些地方，<br>我们一起记得。</h1><p>邀请记得它的人。把照片与回忆放在一起，<br>给那个回不去的地方，一个新的入口。</p></div></div>
-    <form id="join-form" class="join-card"><span class="eyebrow">START WITH A MEMORY</span><h2 id="join-heading">建立一个回忆空间</h2><p id="join-description">一个房间，一座院子。先从一处地方开始。</p><label>怎么称呼你<input id="name-input" name="name" maxlength="30" placeholder="你的称呼" autocomplete="nickname" required></label><label id="project-name-label">这个地方叫什么<input id="title-input" maxlength="60" value="桂花树下的院子" required></label><label class="checkbox-label" id="seed-label"><input type="checkbox" id="seed-input" checked><span>载入三条合成回忆，体验示例流程</span></label><button class="button primary" id="join-submit" type="submit">一起记得 <span>→</span></button><p class="local-note">本地邀请制 Demo，称呼不是正式登录账号。<br>照片和回忆保存在这台 Mac；真实 AI 服务尚未启用。</p></form>
+    <form id="join-form" class="join-card"><span class="eyebrow">START WITH A MEMORY</span><h2 id="join-heading">建立一个回忆空间</h2><p id="join-description">一个房间，一座院子。先从一处地方开始。</p><label>怎么称呼你<input id="name-input" name="name" maxlength="30" placeholder="你的称呼" autocomplete="nickname" required></label><label id="project-name-label">这个地方叫什么<input id="title-input" maxlength="60" value="桂花树下的院子" required></label><label class="checkbox-label" id="seed-label"><input type="checkbox" id="seed-input" checked><span>载入三条合成回忆，体验示例流程</span></label><button class="button primary" id="join-submit" type="submit">一起记得 <span>→</span></button><p class="local-note"><a href="./generated-world.html">先走进一个真实生成的小院 ↗</a></p><p class="local-note">本地邀请制 Demo，称呼不是正式登录账号。<br>照片和回忆保存在这台 Mac；真实 AI 服务尚未启用。</p></form>
   </section>
   <div class="fatal" id="fatal" hidden><h1>暂时连不上回忆空间</h1><p id="fatal-message"></p><button id="reload-button" class="button primary">重新连接</button></div>
   <dialog id="modal"><div class="modal-heading"><h2 id="modal-title"></h2><button id="close-modal" aria-label="关闭对话框">×</button></div><div id="modal-body"></div></dialog>

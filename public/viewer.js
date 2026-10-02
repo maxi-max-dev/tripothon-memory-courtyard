@@ -1,7 +1,13 @@
 // Original, dependency-free WebGL courtyard. This is a labelled procedural sample,
 // not a renderer or reconstruction of World Labs assets.
-const vs=`attribute vec3 aPosition;attribute vec3 aColor;attribute vec3 aNormal;uniform mat4 uProjection;uniform mat4 uView;varying vec3 vColor;varying float vDepth;void main(){vec4 p=uView*vec4(aPosition,1.0);gl_Position=uProjection*p;float light=.64+.36*max(0.,dot(normalize(aNormal),normalize(vec3(-.5,1.,.65))));vColor=aColor*light;vDepth=-p.z;}`;
-const fs=`precision mediump float;varying vec3 vColor;varying float vDepth;void main(){float fog=clamp((vDepth-10.)/25.,0.,.65);gl_FragColor=vec4(mix(vColor,vec3(.78,.82,.70),fog),1.);}`;
+// Matching varying precision avoids strict WebGL 1 linker differences.
+const vs=`attribute vec3 aPosition;attribute vec3 aColor;attribute vec3 aNormal;uniform mat4 uProjection;uniform mat4 uView;varying mediump vec3 vColor;varying mediump float vDepth;void main(){vec4 p=uView*vec4(aPosition,1.0);gl_Position=uProjection*p;float light=.64+.36*max(0.,dot(normalize(aNormal),normalize(vec3(-.5,1.,.65))));vColor=aColor*light;vDepth=-p.z;}`;
+const fs=`precision mediump float;varying mediump vec3 vColor;varying mediump float vDepth;void main(){float fog=clamp((vDepth-10.)/25.,0.,.65);gl_FragColor=vec4(mix(vColor,vec3(.78,.82,.70),fog),1.);}`;
+const viewerError=code=>Object.assign(new Error(code),{code});
+export function viewerFailure(error){
+  const reasons={WEBGL_UNAVAILABLE:'当前浏览器未提供 WebGL，无法进入 3D。可换支持 WebGL 的浏览器或设备查看。',SHADER_COMPILE_FAILED:'3D 着色器编译失败，当前浏览器无法显示场景。',PROGRAM_LINK_FAILED:'3D 着色器链接失败，当前图形环境不兼容。',CONTEXT_LOST:'图形上下文已丢失，请尝试重新加载 3D。',RENDER_FAILED:'3D 初始化或绘制失败，请尝试重新加载。'};
+  const code=error?.code in reasons?error.code:'RENDER_FAILED';return {code,message:reasons[code]};
+}
 const color = hex => hex.match(/\w\w/g).map(x=>parseInt(x,16)/255);
 const subtract=(a,b)=>a.map((x,i)=>x-b[i]);
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -62,24 +68,29 @@ function geometry(spec={}){
 }
 
 export function createCourtyard(canvas,onFailure=()=>{}){
-  const gl=canvas.getContext('webgl',{antialias:true,alpha:false,preserveDrawingBuffer:true});
-  if(!gl)throw new Error('WebGL unavailable');
-  function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error('Shader failed');return s;}
-  const program=gl.createProgram(),vert=shader(gl.VERTEX_SHADER,vs),frag=shader(gl.FRAGMENT_SHADER,fs);gl.attachShader(program,vert);gl.attachShader(program,frag);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error('Renderer failed');
-  gl.useProgram(program);const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+  let gl;try{gl=canvas.getContext('webgl',{antialias:true,alpha:false,preserveDrawingBuffer:true});}catch{throw viewerError('WEBGL_UNAVAILABLE');}
+  if(!gl)throw viewerError('WEBGL_UNAVAILABLE');
+  const shaders=[];let program,buffer;
+  const release=()=>{if(buffer)gl.deleteBuffer(buffer);for(const s of shaders)gl.deleteShader(s);if(program)gl.deleteProgram(program);};
+  function shader(type,source){const s=gl.createShader(type);if(!s)throw viewerError(gl.isContextLost()?'CONTEXT_LOST':'SHADER_COMPILE_FAILED');shaders.push(s);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw viewerError(gl.isContextLost()?'CONTEXT_LOST':'SHADER_COMPILE_FAILED');return s;}
+  try{program=gl.createProgram();const vert=shader(gl.VERTEX_SHADER,vs),frag=shader(gl.FRAGMENT_SHADER,fs);if(!program)throw viewerError('PROGRAM_LINK_FAILED');gl.attachShader(program,vert);gl.attachShader(program,frag);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw viewerError(gl.isContextLost()?'CONTEXT_LOST':'PROGRAM_LINK_FAILED');gl.useProgram(program);buffer=gl.createBuffer();if(!buffer)throw viewerError('RENDER_FAILED');gl.bindBuffer(gl.ARRAY_BUFFER,buffer);}catch(error){release();throw error;}
   let count=0,spec={},exploring=false,position=[7.5,5.8,10.7],yaw=-.61,pitch=-.36,destroyed=false,drag=null,last=0;
   const keys=new Set();
   for(const [name,offset]of [['aPosition',0],['aColor',12],['aNormal',24]]){const loc=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,36,offset);}
   const projection=gl.getUniformLocation(program,'uProjection'),view=gl.getUniformLocation(program,'uView');gl.enable(gl.DEPTH_TEST);gl.clearColor(.76,.815,.73,1);
-  const load=(world)=>{spec=world?.geometry||{};const data=geometry(spec);count=data.length/9;gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);};load();
+  const check=()=>{if(gl.isContextLost())throw viewerError('CONTEXT_LOST');if(gl.getError()!==gl.NO_ERROR)throw viewerError('RENDER_FAILED');};
+  const load=(world)=>{spec=world?.geometry||{};const data=geometry(spec);count=data.length/9;gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);check();};try{load();}catch(error){release();throw error;}
   const reset=()=>{if(exploring){position=spec.start?[...spec.start]:[0,1.6,3.7];yaw=0;pitch=-.025;}else{position=[7.5,5.8,10.7];yaw=-.61;pitch=-.36;}};
   function move(dx,dz){const nx=position[0]+dx,nz=position[2]+dz,[tx,,tz]=spec.tree||[-2.7,0,-1.3],[mx,,mz]=spec.table||[1.6,0,-1.3];if(Math.abs(nx)>5.6||Math.abs(nz)>4.55||Math.hypot(nx-tx,nz-tz)<1.17||(Math.abs(nx-mx)<1&&Math.abs(nz-mz)<1.55))return;position[0]=nx;position[2]=nz;}
-  function draw(time){if(destroyed)return;const dt=Math.min((time-last)/1000,.05);last=time;
+  let frameId=0,checkedAt=-Infinity;
+  function draw(time){if(destroyed)return;try{const dt=Math.min((time-last)/1000,.05);last=time;
     const rect=canvas.getBoundingClientRect();if(rect.width&&rect.height){const dpr=Math.min(devicePixelRatio||1,1.8),w=Math.round(rect.width*dpr),h=Math.round(rect.height*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}
       if(exploring){let f=(keys.has('forward')?1:0)-(keys.has('back')?1:0),s=(keys.has('right')?1:0)-(keys.has('left')?1:0);const d=Math.hypot(f,s)||1;f/=d;s/=d;move((Math.sin(yaw)*f+Math.cos(yaw)*s)*dt*2,( -Math.cos(yaw)*f+Math.sin(yaw)*s)*dt*2);}
       gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniformMatrix4fv(projection,false,perspective(w/h));const target=[position[0]+Math.sin(yaw)*Math.cos(pitch),position[1]+Math.sin(pitch),position[2]-Math.cos(yaw)*Math.cos(pitch)];gl.uniformMatrix4fv(view,false,lookAt(position,target));gl.drawArrays(gl.TRIANGLES,0,count);
-    }requestAnimationFrame(draw);
-  }requestAnimationFrame(draw);
+      if(time-checkedAt>=1000){check();checkedAt=time;}
+    }frameId=requestAnimationFrame(draw);
+  }catch(error){destroyed=true;keys.clear();onFailure(error?.code?error:viewerError('RENDER_FAILED'));}}
+  frameId=requestAnimationFrame(draw);
   const down=e=>{drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});};
   const pointer=e=>{if(!drag)return;yaw+=(e.clientX-drag.x)*.004;pitch=Math.max(-1.1,Math.min(.9,pitch-(e.clientY-drag.y)*.004));drag={x:e.clientX,y:e.clientY};};
   const up=()=>{drag=null;};
@@ -87,7 +98,7 @@ export function createCourtyard(canvas,onFailure=()=>{}){
   const keydown=e=>{if(!exploring||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||document.querySelector('dialog[open]'))return;const k=mapping[e.key]||mapping[e.key.toLowerCase()];if(k){e.preventDefault();keys.add(k);}};
   const keyup=e=>keys.delete(mapping[e.key]||mapping[e.key.toLowerCase()]);const clear=()=>keys.clear();
   canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',pointer);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
-  const lost=e=>{e.preventDefault();destroyed=true;onFailure();};canvas.addEventListener('webglcontextlost',lost);
+  const lost=e=>{e.preventDefault();destroyed=true;keys.clear();cancelAnimationFrame(frameId);onFailure(viewerError('CONTEXT_LOST'));};canvas.addEventListener('webglcontextlost',lost);
   window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',clear);
-  return {load,reset,setExploring(value){exploring=value;keys.clear();reset();},move(direction,value){if(value)keys.add(direction);else keys.delete(direction);},destroy(){destroyed=true;window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',clear);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',pointer);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('webglcontextlost',lost);gl.deleteBuffer(buffer);gl.deleteShader(vert);gl.deleteShader(frag);gl.deleteProgram(program);}};
+  return {load,reset,setExploring(value){exploring=value;keys.clear();reset();},move(direction,value){if(value)keys.add(direction);else keys.delete(direction);},destroy(){destroyed=true;keys.clear();cancelAnimationFrame(frameId);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',clear);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',pointer);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('webglcontextlost',lost);release();}};
 }

@@ -1,4 +1,4 @@
-import { createCourtyard } from './viewer.js';
+import { createCourtyard, viewerFailure } from './viewer.js';
 import { loadSpzViewer } from './spz-viewer.js';
 const isStatic=document.documentElement.dataset.preview==='static';
 const preview=isStatic?(await import('./static-preview.js')).createStaticPreview():null;
@@ -102,7 +102,19 @@ function renderActions(){
   const active=state.jobs.find(j=>['queued','submitting','running','failed','needs_review'].includes(j.status));$('job-note').hidden=!active;
   if(active)$('job-note').textContent=active.error||'任务已保存，正在处理。关闭页面不会删除任务记录。';
 }
-function ensureViewer(){if(viewer)return;try{viewer=createCourtyard($('world-canvas'),()=>{$('viewer-fallback').hidden=false;toast('3D 暂时无法加载，已切换到示意图。',true);});$('viewer-fallback').hidden=true;}catch{$('viewer-fallback').hidden=false;$('explore-button').disabled=true;}}
+function syncViewerControls(){
+  const ready=!!viewer&&$('viewer-fallback').hidden;if(!ready)exploring=false;
+  $('explore-button').disabled=!ready;$('reset-view').disabled=!ready;$('world-canvas').hidden=!ready;
+  $('world-overlay').hidden=!ready||exploring;$('world-control').hidden=!ready||exploring;
+  $('walk-controls').hidden=!ready||!exploring;$('explore-hint').hidden=!ready||!exploring;
+  document.querySelectorAll('[data-move]').forEach(b=>b.disabled=!ready);
+}
+function failViewer(error){
+  const failure=viewerFailure(error);viewer?.destroy();viewer=null;exploring=false;
+  $('viewer-failure-reason').textContent=failure.message+' 已保留示意图，当前不能移动。';$('viewer-failure-code').textContent=`诊断：${failure.code}`;
+  $('viewer-fallback').hidden=false;syncViewerControls();console.warn(`[Tripothon 3D] ${failure.code}: ${failure.message}`);
+}
+function ensureViewer(world){try{viewer=createCourtyard($('world-canvas'),failViewer);viewer.load(world);$('viewer-fallback').hidden=true;syncViewerControls();}catch(error){failViewer(error);}}
 function renderWorld(){
   const saved=state.jobs.filter(j=>j.status==='succeeded'&&j.world);
   const job=saved.find(j=>j.id===activeWorldId)||saved[0];if(job)activeWorldId=job.id;
@@ -113,32 +125,33 @@ function renderWorld(){
   $('scene-label').textContent=job?(job.provider==='example'?'已保存的本地程序场景':'World Labs · SPZ 轻量预览'):'本地程序场景 · 预览';
   if(job?.id===loadedWorldId||(!job&&loadedWorldId==='preview'))return;
   viewerAbort?.abort();viewer?.destroy();viewer=null;
+  exploring=false;syncViewerControls();
   // A fresh canvas also resets lost contexts and GL attribute state between renderers.
   const oldCanvas=$('world-canvas');oldCanvas.replaceWith(oldCanvas.cloneNode(false));
   loadedWorldId=job?.id||'preview';$('world-view').querySelector('.external-fallback')?.remove();
   $('viewer-fallback').querySelector('img').src='./courtyard.svg';$('world-canvas').hidden=false;
   if(!job||job.world.kind==='local-courtyard'){
-    ensureViewer();viewer?.load(job?.world);$('world-overlay').hidden=exploring;$('world-control').hidden=exploring;$('explore-button').disabled=!viewer;
+    ensureViewer(job?.world);
   }else{
-    setExploring(false);$('world-overlay').hidden=true;$('world-control').hidden=true;$('viewer-fallback').hidden=false;
+    $('viewer-failure-reason').textContent='正在加载已保存的 3D，暂不可移动。';$('viewer-failure-code').textContent='';$('viewer-fallback').hidden=false;syncViewerControls();
     const thumbnail=job.world.assets?.thumbnail_url;if(/^https:\/\//.test(thumbnail||''))$('viewer-fallback').querySelector('img').src=thumbnail;
     const marbleUrl=/^https:\/\/marble\.worldlabs\.ai\//.test(job.world.marbleUrl||'')?job.world.marbleUrl:null;
     const el=document.createElement('div');el.className='external-fallback';el.innerHTML=`<h3>正在打开已生成的空间</h3><p>首次读取并归档 SPZ；失败时保留缩略图与探索链接。</p>${marbleUrl?`<a href="${esc(marbleUrl)}" target="_blank" rel="noopener noreferrer">在 Marble 中探索 ↗</a>`:''}`;$('world-view').append(el);
     const controller=new AbortController();viewerAbort=controller;
-    loadSpzViewer($('world-canvas'),`/api/worlds/${encodeURIComponent(job.id)}/splats`,{signal:controller.signal,onStatus:message=>{if(!controller.signal.aborted)$('scene-label').textContent=message;},onFailure:message=>{if(!controller.signal.aborted){$('viewer-fallback').hidden=false;toast(message,true);}}}).then(result=>{
-      if(controller.signal.aborted){result.destroy();return;}viewer=result;el.remove();$('viewer-fallback').hidden=true;$('world-control').hidden=false;$('explore-button').disabled=false;
-    }).catch(error=>{if(controller.signal.aborted)return;el.querySelector('h3').textContent='SPZ 暂时无法显示';el.querySelector('p').textContent=error.message;$('viewer-fallback').hidden=false;});
+    loadSpzViewer($('world-canvas'),`/api/worlds/${encodeURIComponent(job.id)}/splats`,{signal:controller.signal,onStatus:message=>{if(!controller.signal.aborted)$('scene-label').textContent=message;},onFailure:message=>{if(!controller.signal.aborted){failViewer(new Error(message));toast(message,true);}}}).then(result=>{
+      if(controller.signal.aborted){result.destroy();return;}viewer=result;el.remove();$('viewer-fallback').hidden=true;syncViewerControls();
+    }).catch(error=>{if(controller.signal.aborted)return;el.querySelector('h3').textContent='SPZ 暂时无法显示';el.querySelector('p').textContent=error.message;failViewer(error);});
   }
 }
 function renderVersions(job){
   const s=state.scene,c=state.confirmed,r=state.project.revision;
-  $('version-strip').innerHTML=[['现有资料',`r${r}`,`${state.messages.length} 条回忆 · ${state.photos.length} 张照片`],['最新描述',s?`D${s.version} · r${s.revision}`:'尚未整理',s?(s.revision!==r?`还有 ${r-s.revision} 次资料更新待整理`:s.approved_at?'已确认':'待发起人确认'):'等待资料整理'],['确认快照',c?`D${c.version} · r${c.revision}`:'尚未确认',c?'确认的是当时的描述与来源':'发起人核对后确认'],['正在查看',job?`W${job.version} ← D${job.scene_version}`:'程序场景预览',job?`基于 r${job.scene_revision} · ${job.provider==='example'?'固定示例':'World Labs'}`:'尚未生成或保存世界']].map(([label,value,note])=>`<div><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join('');
+  $('version-strip').innerHTML=[['已有回忆',`${state.messages.length} 条文字`,`${state.photos.length} 张照片 · 每条材料都保留来源`],['最新描述',s?`第 ${s.version} 份描述`:'尚未整理',s?(s.revision!==r?`还有 ${r-s.revision} 次资料更新待整理`:s.approved_at?'已确认':'待发起人确认'):'等待资料整理'],['确认记录',c?`第 ${c.version} 份描述`:'尚未确认',c?'保留确认时的描述与来源':'发起人核对后确认'],['正在查看',job?`第 ${job.version} 版世界`:'程序场景预览',job?`对应第 ${job.scene_version} 份描述 · ${job.provider==='example'?'固定示例':'World Labs'}`:'尚未生成或保存世界']].map(([label,value,note])=>`<div><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join('');
   let pending='尚未保存世界。当前是固定的原创程序院子预览。';
-  if(job){const reasons=[];if(r!==job.scene_revision)reasons.push(`资料已到 r${r}，${r-job.scene_revision} 次更新尚未反映`);if(s&&s.id!==job.scene_id)reasons.push(`新描述 D${s.version}${s.approved_at?' 已确认，尚未生成它的世界':' 仍待确认'}`);pending=reasons.length?`仍显示 W${job.version}（D${job.scene_version} / r${job.scene_revision}）。${reasons.join('；')}。旧世界已保留。`:`W${job.version} 对应已确认 D${job.scene_version} / r${job.scene_revision}。${job.provider==='example'?'这是固定程序示例，几何不会随描述改变。':'新回忆和修改不会覆盖这个版本。'}`;}
+  if(job){const reasons=[];if(r!==job.scene_revision)reasons.push(`还有 ${r-job.scene_revision} 次资料更新未反映在这个世界里`);if(s&&s.id!==job.scene_id)reasons.push(`第 ${s.version} 份新描述${s.approved_at?'已确认，尚未生成世界':'仍待确认'}`);pending=reasons.length?`正在查看第 ${job.version} 版世界。${reasons.join('；')}。旧世界已保留。`:`第 ${job.version} 版世界对应第 ${job.scene_version} 份确认描述。${job.provider==='example'?'这是固定程序示例，空间不会随描述改变。':'新回忆和修改不会覆盖这个版本。'}`;}
   $('world-pending').textContent=pending;$('world-pending').parentElement.classList.toggle('pending',!!job&&(r!==job.scene_revision||s?.id!==job.scene_id));$('world-snapshot').hidden=!job;
-  $('world-snapshot').onclick=()=>busy($('world-snapshot'),async()=>{const snapshot=await api(`/api/scenes/${encodeURIComponent(job.scene_id)}`);showModal(`W${job.version} 的确认快照 · D${job.scene_version} / r${job.scene_revision}`,`<p class="modal-copy">确认于 ${esc(new Date(snapshot.approved_at).toLocaleString('zh-CN'))}。这是该世界的历史来源，不代表最新描述。</p><div class="scene-description">${esc(snapshot.data.description)}</div><p class="small">保留 ${snapshot.evidence.length} 条原始材料；${snapshot.mode==='openai'?'真实 AI 整理':'示例或手动整理'}。</p>`);});
+  $('world-snapshot').onclick=()=>busy($('world-snapshot'),async()=>{const snapshot=await api(`/api/scenes/${encodeURIComponent(job.scene_id)}`);showModal(`第 ${job.version} 版世界的确认记录`,`<p class="modal-copy">确认于 ${esc(new Date(snapshot.approved_at).toLocaleString('zh-CN'))}。这是该世界的历史来源，不代表最新描述。</p><div class="scene-description">${esc(snapshot.data.description)}</div><p class="small">保留 ${snapshot.evidence.length} 条原始材料；${snapshot.mode==='openai'?'真实 AI 整理':'示例或手动整理'}。</p>`);});
 }
-function setExploring(value){exploring=value;viewer?.setExploring(value);$('world-overlay').hidden=value;$('world-control').hidden=value;$('walk-controls').hidden=!value;$('explore-hint').hidden=!value;if(value)$('world-canvas').focus({preventScroll:true});}
+function setExploring(value){exploring=!!value&&!!viewer&&$('viewer-fallback').hidden;viewer?.setExploring(exploring);syncViewerControls();if(exploring)$('world-canvas').focus({preventScroll:true});}
 $('explore-button').onclick=()=>setExploring(true);$('exit-explore').onclick=()=>setExploring(false);$('reset-view').onclick=()=>viewer?.reset();$('retry-viewer').onclick=()=>{loadedWorldId=null;renderWorld();toast('正在重新加载 3D。');};
 document.querySelectorAll('[data-move]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);viewer?.move(b.dataset.move,true);});for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,()=>viewer?.move(b.dataset.move,false));});
 
@@ -164,16 +177,16 @@ $('generate-button').onclick=()=>{const sceneId=state.scene.id;showModal('给这
   const update=()=>{const real=$('world-provider').value==='worldlabs';$('real-world-options').hidden=!real;$('local-world-note').hidden=real;$('generate-final').textContent=real?'确认并调用 World Labs':'保存示例世界并探索';$('generate-final').disabled=real&&!$('world-consent').checked;};$('world-provider').onchange=update;$('world-consent').onchange=update;
   $('generate-final').onclick=()=>busy($('generate-final'),async()=>{const provider=$('world-provider').value;const job=await api('/api/worlds',{projectId,sceneId,provider,consent:provider==='worldlabs'&&$('world-consent').checked,photoIds:[...document.querySelectorAll('.world-photo:checked')].map(x=>x.value)});activeWorldId=job.id;closeModal();await refresh();tab('world');if(provider==='example'){toast(isStatic?'本页已保存新的示例记录；刷新会重置，不跨设备同步。':'示例世界已保存，所有参与者共享同一份记录。');setExploring(true);}else toast('真实生成任务已保存，将持续查询进度。');});
 };
-$('versions-button').onclick=()=>{showModal('已经留下的空间',state.jobs.length?`<p class="modal-copy">每份确认描述对应独立保存记录。添加回忆不会覆盖旧空间。</p>${state.jobs.map(j=>`<button class="world-history" data-world="${esc(j.id)}" ${j.status==='succeeded'?'':'disabled'}>W${j.version} · ${j.provider==='example'?'本地示例世界':'World Labs 世界'} ← D${j.scene_version} / r${j.scene_revision}<small>${new Date(j.created_at).toLocaleString('zh-CN')} · ${{succeeded:'已保存',running:'生成中',queued:'已排队',submitting:'提交中',failed:'失败',needs_review:'结果待核对'}[j.status]||j.status}</small></button>`).join('')}`:'<p class="modal-copy">还没有保存的世界。先确认描述，再保存第一个示例世界。</p>');$('modal-body').querySelectorAll('[data-world]').forEach(b=>b.onclick=()=>{activeWorldId=b.dataset.world;loadedWorldId=null;setExploring(false);renderWorld();closeModal();tab('world');});};
-function providerDialog(){const p=state?.providers;showModal('真实功能与示例边界',`<div class="provider-row"><div>多人群聊与照片<small>独立浏览器身份 · 服务端同步 · SQLite 持久保存</small></div><span class="pill">真实运行</span></div><div class="provider-row"><div>记忆整理 Agent<small>${p?.agent.enabled?'已配置模型；发送资料前需确认':'未接入模型；引用示例仅逐条展示原话'}</small></div><span class="pill sand">${p?.agent.enabled?'已配置':'未连接'}</span></div><div class="provider-row"><div>AI 空间参考图<small>生成图会明确标为推测，不是历史照片</small></div><span class="pill sand">${p?.image.enabled?'已配置':'未连接'}</span></div><div class="provider-row"><div>World Labs<small>异步接口、SPZ 轻量查看与本机归档已实现；真实付费生成未验证</small></div><span class="pill sand">${p?.world.enabled?'已配置':'未连接'}</span></div><div class="provider-row"><div>本地院子<small>原创程序场景 · 可探索 · 可保存 · 不根据聊天重建</small></div><span class="pill sand">明确示例</span></div><p class="modal-copy">当前仅在本机运行，尚无公开体验地址。邀请链接只适用于本机其他浏览器；正式账号、远程访问与部署均未配置。</p>`);}
+$('versions-button').onclick=()=>{showModal('已经留下的空间',state.jobs.length?`<p class="modal-copy">每份确认描述对应独立保存记录。添加回忆不会覆盖旧空间。</p>${state.jobs.map(j=>`<button class="world-history" data-world="${esc(j.id)}" ${j.status==='succeeded'?'':'disabled'}>第 ${j.version} 版 · ${j.provider==='example'?'本地示例世界':'World Labs 世界'} · 对应第 ${j.scene_version} 份描述<small>${new Date(j.created_at).toLocaleString('zh-CN')} · ${{succeeded:'已保存',running:'生成中',queued:'已排队',submitting:'提交中',failed:'失败',needs_review:'结果待核对'}[j.status]||j.status}</small></button>`).join('')}`:'<p class="modal-copy">还没有保存的世界。先确认描述，再保存第一个示例世界。</p>');$('modal-body').querySelectorAll('[data-world]').forEach(b=>b.onclick=()=>{activeWorldId=b.dataset.world;loadedWorldId=null;setExploring(false);renderWorld();closeModal();tab('world');});};
+function providerDialog(){const p=state?.providers;showModal('真实功能与示例边界',`<div class="provider-row"><div>多人群聊与照片<small>独立浏览器身份 · 服务端同步 · 回忆持久保存</small></div><span class="pill">真实运行</span></div><div class="provider-row"><div>记忆整理 Agent<small>${p?.agent.enabled?'已配置模型；发送资料前需确认':'未接入模型；引用示例仅逐条展示原话'}</small></div><span class="pill sand">${p?.agent.enabled?'已配置':'未连接'}</span></div><div class="provider-row"><div>AI 空间参考图<small>生成图会明确标为推测，不是历史照片</small></div><span class="pill sand">${p?.image.enabled?'已配置':'未连接'}</span></div><div class="provider-row"><div>World Labs<small>已完成两次合成文字真实生成；保存的桂花小院可直接查看，持续生成仍关闭</small></div><span class="pill sand">${p?.world.enabled?'已配置':'未连接'}</span></div><div class="provider-row"><div>本地院子<small>原创程序场景 · 可探索 · 可保存 · 不根据聊天重建</small></div><span class="pill sand">明确示例</span></div><p class="modal-copy">当前仅在本机运行，尚无公开体验地址。邀请链接只适用于本机其他浏览器；正式账号、远程访问与部署均未配置。</p>`);}
 $('providers-button').onclick=providerDialog;$('footer-status').onclick=providerDialog;$('connection').onclick=()=>state?providerDialog():toast('本地 Demo，尚未连接外部 AI 或 World Labs。');
 function staticUploadNotice(){toast('公开静态预览不接收照片或个人资料；请在本地后端使用上传功能。');}
 if(isStatic){
-  const banner=document.createElement('aside');banner.className='preview-banner';banner.innerHTML='<strong>公开静态预览 · 全部为合成示例</strong><span>可体验界面、模拟追问和程序院子。无真实多人同步、真实 AI 或 World Labs；改动仅在当前页面，刷新重置。</span><a href="./materials.html">查看视觉素材板 ↗</a>';document.querySelector('.topbar').after(banner);
+  const banner=document.createElement('aside');banner.className='preview-banner';banner.innerHTML='<strong>公开静态预览 · 全部为合成示例</strong><span>可体验界面、模拟追问和程序院子。多人流程与助手为模拟；另有已保存的 World Labs 真实生成案例。页面改动刷新重置。</span><a href="./materials.html">查看视觉素材板 ↗</a>';document.querySelector('.topbar').after(banner);
   $('message-input').disabled=true;$('message-input').placeholder='此公开预览不接收个人资料，点击下方按钮加入合成回忆。';
   const submit=$('message-form').querySelector('button[type="submit"]');submit.type='button';submit.textContent='＋ 合成回忆';submit.setAttribute('aria-label','补充一条合成回忆');submit.className='button primary';submit.onclick=()=>preview.addSynthetic();$('message-form').onsubmit=e=>e.preventDefault();$('upload-button').onclick=staticUploadNotice;
   $('invite-button').onclick=()=>showModal('分享静态预览',`<p class="modal-copy">复制浏览器地址，可在其他电脑或手机打开同一份固定示例。每个页面独立运行；这不是多人项目邀请，不会同步你当前的进度。</p><input class="modal-input" readonly aria-label="静态预览地址" value="${esc(location.href.split('?')[0])}">`);
-  const boundaries=()=>showModal('静态预览的真实边界','<p class="modal-copy">已提供：同一套界面、固定合成回忆、模拟助手调度、描述确认和版本流程、可探索的原创 WebGL 院子。</p><p class="modal-copy">没有提供：服务器、登录、跨设备多人同步、照片上传、真实模型、AI 参考图、World Labs 生成、持久保存。刷新即恢复示例。</p><p class="modal-copy">真正的 Node / SQLite 后端在独立本地工程中保留；尚未公开部署，也没有进行本轮付费 API 请求。</p>');
+  const boundaries=()=>showModal('静态预览的真实边界','<p class="modal-copy">已提供：同一套界面、固定合成回忆、模拟助手调度、描述确认和版本流程、可探索的原创 WebGL 院子。</p><p class="modal-copy">没有提供：服务器、登录、跨设备多人同步、照片上传、在线模型调用、AI 参考图和在线世界生成。另有独立页面展示已保存的 World Labs 桂花小院。流程状态刷新即恢复示例。</p><p class="modal-copy">真正的 Node / SQLite 后端在独立本地工程中保留；尚未公开部署。已保存世界来自两次已授权的生成，浏览页面不发起付费请求。</p>');
   $('providers-button').onclick=boundaries;$('footer-status').onclick=boundaries;$('connection').onclick=boundaries;
   document.querySelector('footer>span:last-child').replaceChildren(Object.assign(document.createElement('a'),{href:'./materials.html',textContent:'静态合成预览 · 查看视觉素材板 ↗'}));
 }
