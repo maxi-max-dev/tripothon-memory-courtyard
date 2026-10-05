@@ -1,0 +1,62 @@
+{
+  "recordedDate": "2026-10-05",
+  "durationSeconds": 142.32,
+  "width": 1280,
+  "height": 812,
+  "codec": "h264",
+  "framesPerSecond": 25,
+  "sizeBytes": 7978749,
+  "sha256": "a7eb3482890f858a8d807c8f6ce253a9b00a33cf00114b711d553a440c38cf8f",
+  "continuousRealRecording": true,
+  "captions": [
+    "zh",
+    "en"
+  ],
+  "audio": "none",
+  "inputs": "Synthetic text and an archived synthetic World Labs image; no private input",
+  "newGenerationCalls": 0,
+  "environment": "Mac Chrome; independent cloud browser previously reported WEBGL_UNAVAILABLE",
+  "chapters": [
+    {
+      "seconds": 0.086,
+      "zh": "回到那儿：可操作的回忆 App；合成示例与本机项目",
+      "en": "Back to That Place: an interactive memory App with a synthetic example and local notebooks."
+    },
+    {
+      "seconds": 8.579,
+      "zh": "三位合成角色的回忆；Agent 整理为明确标注的预设记录",
+      "en": "Three fictional contributors. Agent organization is explicitly preset, not live AI."
+    },
+    {
+      "seconds": 20.126,
+      "zh": "核对来源后，打开提前由 World Labs 真实生成的第一版",
+      "en": "After source review, open the first real World Labs output, generated in advance."
+    },
+    {
+      "seconds": 47.005,
+      "zh": "实际拖动与移动；也可主动切换到已保存的全景",
+      "en": "Actual camera movement and exploration, with an archived panorama alternative."
+    },
+    {
+      "seconds": 61.729,
+      "zh": "补上红色自行车：第二份独立生成结果，旧版仍保留",
+      "en": "Add the remembered red bicycle: a second independent generation; the first version remains."
+    },
+    {
+      "seconds": 97.668,
+      "zh": "新建自己的本机项目：自由文字与带说明的图片",
+      "en": "Create a local project with free text and a captioned image. Nothing is uploaded."
+    },
+    {
+      "seconds": 114.047,
+      "zh": "逐条引用原话；手动修改描述，草稿在刷新后恢复",
+      "en": "Source quotations and manual editing; a description draft survives refresh."
+    },
+    {
+      "seconds": 132.691,
+      "zh": "确认记录已保留；在线 Agent、远程多人和新项目生成尚未开放",
+      "en": "Confirmation history is saved. Online AI, remote collaboration and new-world generation are not enabled."
+    }
+  ],
+  "framing": "Fixed gray recorder padding below the product was cropped; the continuous timeline was not cut or accelerated."
+}

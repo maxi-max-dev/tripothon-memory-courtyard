@@ -20,7 +20,7 @@ export function parseViewerPayload(bytes,diagnostic={}){
 }
 export async function loadSpzViewer(canvas,url,{onStatus=()=>{},onFailure=()=>{},onDiagnostic=()=>{},diagnostic={},signal,startPose}={}){
   let d=cleanDiagnostics({...diagnostic,status:'loading'}),gl=null,inst=null,worker=null,program=null,vs=null,fs=null,buffer=null,corners=null;
-  let destroyed=false,active=false,frame=0,pending=null,initFailure=null,sorting=false,dirty=true,last=0,lastSort=0,yaw=0,pitch=-.14,drag=null;
+  let destroyed=false,active=false,frame=0,pending=null,initFailure=null,sorting=false,dirty=true,needsFrame=true,last=0,lastSort=0,yaw=0,pitch=-.14,drag=null;
   const keys=new Set(),handlers=[],internal=new AbortController();
   const emit=patch=>{d=cleanDiagnostics({...d,...patch});onDiagnostic(d);};
   const listen=(target,event,fn,options)=>{target.addEventListener(event,fn,options);handlers.push(()=>target.removeEventListener(event,fn,options));};
@@ -62,7 +62,7 @@ export async function loadSpzViewer(canvas,url,{onStatus=()=>{},onFailure=()=>{}
       if(pending&&pending.accept(data)){const p=pending;pending=null;clearTimeout(p.timer);p.resolve(data);return;}
       if(active&&data?.sorted){
         if(!(data.sorted instanceof ArrayBuffer)||data.sorted.byteLength!==recordByteLength){fail('WORKER_FAILED');return;}
-        try{gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data.sorted),gl.DYNAMIC_DRAW);checkGL();sorting=false;}catch(e){fail(e.code||'GPU_DRAW_FAILED');}
+        try{gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data.sorted),gl.DYNAMIC_DRAW);checkGL();sorting=false;needsFrame=true;}catch(e){fail(e.code||'GPU_DRAW_FAILED');}
       }
     };
     await waitWorker({probe:true},data=>data?.ready===2);emit({worker:'ready'});
@@ -95,20 +95,25 @@ export async function loadSpzViewer(canvas,url,{onStatus=()=>{},onFailure=()=>{}
     const first=await waitWorker({view:Array.from(look(pos,yaw,pitch))},data=>data?.sorted instanceof ArrayBuffer);
     if(first.sorted.byteLength!==recordByteLength)throw viewerError('WORKER_FAILED',d);
     gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(first.sorted),gl.DYNAMIC_DRAW);checkGL();
-    function drawOnce(){
+    function resize(){
       const rect=canvas.getBoundingClientRect(),ratio=Math.min(devicePixelRatio||1,1.5),w=rect.width?Math.round(rect.width*ratio):Math.max(1,canvas.width),h=rect.height?Math.round(rect.height*ratio):Math.max(1,canvas.height);
-      if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;dirty=true;}
+      if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;needsFrame=true;}
+    }
+    function drawOnce(){
+      resize();const w=canvas.width,h=canvas.height;
       gl.viewport(0,0,w,h);gl.clear(gl.COLOR_BUFFER_BIT);gl.uniformMatrix4fv(vloc,false,look(pos,yaw,pitch));gl.uniformMatrix4fv(ploc,false,projection(w/h));gl.uniform2f(sizeLoc,w,h);inst.drawArraysInstancedANGLE(gl.TRIANGLE_STRIP,0,4,meta.renderedPoints);checkGL();
+      needsFrame=false;
     }
     emit({stage:'first-frame'});onStatus('正在确认首帧绘制…');internal.signal.throwIfAborted();drawOnce();
-    emit({firstFrame:'ready',stage:'rendering',status:'ready'});active=true;
+    emit({firstFrame:'ready',stage:'rendering',status:'ready'});active=true;dirty=false;
     function draw(t){
       if(destroyed)return;const dt=Math.min((t-last)/1000,.05);last=t;
       const forward=(keys.has('forward')?1:0)-(keys.has('back')?1:0),side=(keys.has('right')?1:0)-(keys.has('left')?1:0);
       if(forward||side){const speed=Math.min(2,Math.max(.3,radius*.35))*dt;pos[0]+=(Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed;pos[2]+=(-Math.cos(yaw)*forward+Math.sin(yaw)*side)*speed;dirty=true;}
       try{
+        resize();if(dirty)needsFrame=true;
         if(dirty&&!sorting&&t-lastSort>120){sorting=true;dirty=false;lastSort=t;worker.postMessage({view:Array.from(look(pos,yaw,pitch))});}
-        drawOnce();
+        if(needsFrame)drawOnce();
       }catch(e){fail(e.code||'GPU_DRAW_FAILED');return;}
       frame=requestAnimationFrame(draw);
     }

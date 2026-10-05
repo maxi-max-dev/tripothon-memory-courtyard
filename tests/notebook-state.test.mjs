@@ -33,3 +33,20 @@ test('personal example notes stay separate from project evidence and archived wo
   assert.deepEqual(after.projects,before.projects);assert.equal(after.exampleNotes.length,1);
   assert.throws(()=>addNote(after,'example',{noteId:'bad-photo',body:'图',photo:'data:image/svg+xml,<script>'}),/照片格式/);
 });
+test('description drafts survive restore, block premature confirmation and clear after explicit save',()=>{
+  let s=organize(contributed(),'place-one');s.sceneDrafts['place-one']='  未确认的描述草稿\n窗户方向待确认。';
+  const restored=restoreNotebooks(JSON.stringify(s));assert.equal(restored.sceneDrafts['place-one'],s.sceneDrafts['place-one']);
+  assert.throws(()=>confirmDescription(restored,'place-one',true),/先保存描述/);
+  s=editDescription(restored,'place-one',restored.sceneDrafts['place-one']);assert.equal(s.sceneDrafts['place-one'],undefined);
+  s=confirmDescription(s,'place-one',true);assert.match(s.projects[0].versions[0].description,/方向待确认/);
+});
+test('all supported source notes and long confirmation snapshots survive refresh without truncation',()=>{
+  let s=created();for(let i=0;i<80;i++)s=addNote(s,'place-one',{noteId:`long-${i}`,body:String(i).padStart(2,'0')+'甲'.repeat(1998)});
+  s=confirmDescription(organize(s,'place-one'),'place-one',true);assert.ok(s.projects[0].scene.description.length>160000);
+  assert.deepEqual(restoreNotebooks(JSON.stringify(s)),s);
+});
+test('confirmation capacity matches restore capacity without dropping saved versions',()=>{
+  let s=organize(contributed(),'place-one');for(let i=0;i<80;i++){s=editDescription(s,'place-one',`第 ${i} 次人工确认`);s=confirmDescription(s,'place-one',true);}
+  const last=structuredClone(s.projects[0].versions.at(-1));s=editDescription(s,'place-one','下一次修改');
+  assert.throws(()=>confirmDescription(s,'place-one',true),/80 份/);assert.deepEqual(restoreNotebooks(JSON.stringify(s)).projects[0].versions.at(-1),last);
+});
